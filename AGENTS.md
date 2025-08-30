@@ -1,4 +1,4 @@
-# Repository Guidelines
+﻿# Repository Guidelines
 
 Agent workflow and style guide: see `docs/AgentStyle.md` (Korean).
 
@@ -34,7 +34,7 @@ Agent workflow and style guide: see `docs/AgentStyle.md` (Korean).
 - Examples: `pytest -q` or `pytest tests/test_tools_itk.py -q`.
 
 ## Commit & Pull Request Guidelines
-- Commits: short, imperative subject (≤72 chars); explain why in body when helpful.
+- Commits: short, imperative subject (??2 chars); explain why in body when helpful.
 - Reference issues (`#<id>`); one logical change per commit.
 - PRs: clear description, testing steps, sample commands, and any relevant logs.
 - Keep diffs focused; update docs/examples when behavior changes.
@@ -43,3 +43,4 @@ Agent workflow and style guide: see `docs/AgentStyle.md` (Korean).
 - Prefer runnable, minimal examples; avoid speculative APIs.
 - When uncertain, use safe defaults and leave clear TODOs.
 - Keep `docs/` and `docs_api_index/` consistent with code changes.
+

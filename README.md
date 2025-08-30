@@ -47,6 +47,13 @@ A domain-specific Python coding agent focused on ITK/VTK/RTK pipelines. It provi
 - UTF-8 encoding for all text files (use `scripts/convert_to_utf8.ps1` on Windows if needed)
 - For web RAG: `requests`, `beautifulsoup4`, and a search API key (e.g., `BING_API_KEY`)
 
+## Lint
+
+- CI runs `ruff` on every push/PR.
+- Local run:
+  - Install: `pip install ruff`
+  - Check: `ruff check .`
+
 ## Secrets (API Keys)
 
 Preferred: create `configs/secrets.local.json` (not committed) with keys. Environment variables override file values.

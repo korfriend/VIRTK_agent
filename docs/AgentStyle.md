@@ -1,4 +1,4 @@
-# AgentStyle: ITK/VTK/RTK Python Agent (v1)
+﻿# AgentStyle: ITK/VTK/RTK Python Agent (v1)
 
 This guide defines the style and workflow for the ITK/VTK/RTK domain-specific Python coding agent. It favors practical defaults and a runnable Minimal Working Example (MWE) first.
 
@@ -169,4 +169,5 @@ For complex/rare APIs, perform light RAG over docs_api_index/*.md, quote 1–2 s
 Return a runnable MWE first; short English explanation; English code comments.
 If information is missing, use safe defaults and add a small TODO block at the top.
 ```
+
 
