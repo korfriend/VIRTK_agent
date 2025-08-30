@@ -1,23 +1,23 @@
-import pathlib
+﻿import pathlib
 
-# 허용할 폴더들 (필요에 따라 조정)
+# Allowed directories (adjust as needed)
 WHITELIST_DIRS = [
     "./data",
     "./outputs",
     "./tmp"
 ]
 
-# 허용할 확장자들
+# Allowed file extensions
 ALLOWED_EXTS = {".mha", ".nii", ".nrrd", ".png", ".jpg", ".tif"}
 
 
 def guard_path(path: str) -> str:
     """
-    path가 허용된 디렉토리와 확장자인지 확인.
+    path媛 ?덉슜???붾젆?좊━? ?뺤옣?먯씤吏 ?뺤씤.
     """
     p = pathlib.Path(path).resolve()
 
-    # 1. 화이트리스트 경로 검사
+    # 1) Check whitelist directories
     allowed = False
     for base in WHITELIST_DIRS:
         if str(p).startswith(str(pathlib.Path(base).resolve())):
@@ -26,7 +26,7 @@ def guard_path(path: str) -> str:
     if not allowed:
         raise PermissionError(f"Access to {p} is not allowed (not in whitelist)")
 
-    # 2. 확장자 검사
+    # 2) Check file extension
     if p.suffix and p.suffix.lower() not in ALLOWED_EXTS:
         raise PermissionError(f"Extension {p.suffix} is not allowed")
 
@@ -35,12 +35,15 @@ def guard_path(path: str) -> str:
 
 def guard_args(args: dict) -> dict:
     """
-    dict 안의 값 중 파일 경로가 있으면 검사 후 안전한 경로만 반환.
+    dict ?덉쓽 媛?以??뚯씪 寃쎈줈媛 ?덉쑝硫?寃?????덉쟾??寃쎈줈留?諛섑솚.
     """
     checked = {}
     for k, v in args.items():
-        if isinstance(v, str) and ("/" in v or "\\" in v):  # 경로일 가능성
+        if isinstance(v, str) and ("/" in v or "\\" in v):  # likely a path
             checked[k] = guard_path(v)
         else:
             checked[k] = v
     return checked
+
+
+
