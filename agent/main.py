@@ -3,7 +3,7 @@
 # pip install -r requirements.txt
 #
 # 2) Set API key
-# export OPENAI_API_KEY=sk-...
+# Requires OPENAI_API_KEY
 #
 # 3) Run
 # python agent/main.py "Write ITK code to read nii.gz and apply a median filter, then save"
@@ -36,7 +36,7 @@ DOC_PATHS = [
     ROOT/"docs/VTK_API.md",
     ROOT/"docs/RTK_API.md",
 ]
-INDEX_DIR = ROOT/"docs_api_index"            # full-text index (optional)
+INDEX_DIR = ROOT/"docs_api_index"            # (optional) keyword search over docs_api_index/*.md
 CACHE_DIR = ROOT/"agent/.rag_cache"          # embedding cache
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -157,10 +157,10 @@ try:
 except Exception:
     pass
 
-EMBED_MODEL = "text-embedding-3-large"       # 怨좎꽦???꾨쿋??(?ㅺ뎅?닳넁)  :contentReference[oaicite:1]{index=1}
-GEN_MODEL   = "gpt-5.1"                      # ?덉떆: 理쒖떊 梨?由ъ쫵 紐⑤뜽(?먰븯??紐⑤뜽濡?援먯껜)  :contentReference[oaicite:2]{index=2}
+EMBED_MODEL = "text-embedding-3-large"       # embedding model
+GEN_MODEL   = "gpt-5.1"                      # generation model
 
-// Responses API 沅뚯옣(?듯빀??. Chat Completions???⑤룄 ??  :contentReference[oaicite:3]{index=3}
+# Prefer Responses API (or use Chat Completions)
 
 # Override models from config if present
 try:
@@ -172,19 +172,19 @@ except Exception:
     pass
 
 # --------- UTILS: chunking / token count ----------
-def tokenize_len(text, model="gpt-4o"):  # ?좏겙 洹쇱궗移?
+def tokenize_len(text, model="gpt-4o"):  # token count approximation
     enc = tiktoken.get_encoding("o200k_base")
     return len(enc.encode(text))
 
 # Redefine with fallback when tiktoken is unavailable
-def tokenize_len(text, model="gpt-4o"):  # fallback-safe
+def tokenize_len(text, model="gpt-4o"):  # token count approximation
     if globals().get('_HAS_TIKTOKEN'):
         enc = tiktoken.get_encoding("o200k_base")
         return len(enc.encode(text))
     return max(1, len(text.split()))
 
 def md_to_chunks(text: str, max_tokens=600, overlap_tokens=80) -> List[str]:
-    # ?ㅻ뜑 湲곗? ?곗꽑 遺꾪븷 ??湲몃㈃ ?щ씪?대뵫 ?덈룄?곕줈 ?몃텇??
+    # Split by markdown headings first; if still long, segment with sliding window
     parts = re.split(r"(?m)^#{1,6}\s", text)
     chunks = []
     for p in parts:
@@ -193,7 +193,7 @@ def md_to_chunks(text: str, max_tokens=600, overlap_tokens=80) -> List[str]:
         if tokenize_len(p) <= max_tokens:
             chunks.append(p)
         else:
-            toks = re.split(r"(\s+)", p)  # ?⑥뼱 寃쎄퀎 湲곗?
+            toks = re.split(r"(\s+)", p)  # word-boundary segmentation
             buf, t = [], 0
             for w in toks:
                 buf.append(w); t = tokenize_len("".join(buf))
@@ -216,14 +216,14 @@ def file_fingerprint(path: Path) -> str:
 
 # --------- OPENAI CLIENT ----------
 def get_client() -> OpenAI:
-    # ?섍꼍蹂??OPENAI_API_KEY ?꾩슂
+    # Requires OPENAI_API_KEY
     if not _HAS_OPENAI:
         raise RuntimeError("OpenAI SDK is not installed")
     return OpenAI()
 
 def embed_texts(client: OpenAI, texts: List[str]) -> np.ndarray:
     # Batch embedding
-    resp = client.embeddings.create(model=EMBED_MODEL, input=texts)  # :contentReference[oaicite:4]{index=4}
+    resp = client.embeddings.create(model=EMBED_MODEL, input=texts)  #
     vecs = [np.array(d.embedding, dtype=np.float32) for d in resp.data]
     return np.vstack(vecs)
 
@@ -246,7 +246,7 @@ def build_or_load_index() -> Dict:
     cache_key = "core_" + hashlib.sha256("".join(str(p) for p in DOC_PATHS).encode()).hexdigest()[:16]
     cache_file = CACHE_DIR/(cache_key+".json")
 
-    # 罹먯떆 ?좏슚?? ?뚯씪 ?묎굅?꾨┛??鍮꾧탳
+    # Validate cache by comparing file fingerprints
     need_rebuild = True
     if cache_file.exists():
         try:
@@ -262,7 +262,7 @@ def build_or_load_index() -> Dict:
         except Exception:
             pass
 
-    # ?щ퉴??
+    # Rebuild
     docs_info = []
     all_chunks, meta = [], []
     for p in DOC_PATHS:
@@ -270,7 +270,7 @@ def build_or_load_index() -> Dict:
         chunks = md_to_chunks(txt)
         base = p.name
         for i, c in enumerate(chunks):
-            # 硫뷀? ?쒕ぉ(?異?泥??ㅻ뜑/泥?以?
+            # Meta title (first heading/first line)
             first_line = c.splitlines()[0][:80]
             meta.append({"doc": base, "chunk_idx": i, "title": first_line, "source": str(p)})
         docs_info.append({"path": str(p), "fp": file_fingerprint(p), "chunks": len(chunks)})
@@ -290,7 +290,7 @@ def build_or_load_index() -> Dict:
     payload["embeds"] = embeds
     return payload
 
-# full-text index (optional)??媛숈? 諛⑹떇?쇰줈 蹂닿컯 寃??
+# (optional) keyword search over docs_api_index/*.md
 def optional_index_search(query: str, topk=2) -> List[str]:
     if not INDEX_DIR.exists(): return []
     # naive count-based scoring
@@ -337,7 +337,7 @@ def call_llm(user_query: str, retrieved_blobs: List[str]) -> str:
         f"### Context {i+1}\n{blob}" for i, blob in enumerate(retrieved_blobs)
     )
 
-    // Responses API ?덉떆 (Chat Completions瑜??곕젮硫?/chat ?붾뱶?ъ씤???ъ슜)  :contentReference[oaicite:5]{index=5}
+    # Prefer Responses API (or use Chat Completions)
     resp = client.responses.create(
         model=GEN_MODEL,
         input=[
@@ -390,11 +390,13 @@ def main():
 if __name__ == "__main__":
     # Load secrets from local config if available
     _load_secrets_env()
-    # # Requires OPENAI_API_KEY蹂???꾩슂
+    # Requires OPENAI_API_KEY
     if not os.getenv("OPENAI_API_KEY"):
         print("ERROR: Set OPENAI_API_KEY first.", file=sys.stderr)
         sys.exit(1)
     main()
+
+
 
 
 
