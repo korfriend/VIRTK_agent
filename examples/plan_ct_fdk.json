@@ -1,0 +1,23 @@
+{
+    "goal": "FDK reconstruct and render",
+    "steps": [
+        {
+            "tool": "rtk_fdk",
+            "args": {
+                "projections_dir": "./data/projections",
+                "geometry_xml": "./data/geo.xml",
+                "out_mha": "./outputs/volume.mha",
+                "spacing": [1.0, 1.0, 1.0]
+                },
+            "expect": "3D volume at ./outputs/volume.mha"
+        },
+        {
+            "tool": "vtk_render",
+            "args": {
+                "volume_path": "./outputs/volume.mha",
+                "out_png": "./outputs/snapshot.png"
+                },
+            "expect": "snapshot PNG"
+        }
+    ]
+}

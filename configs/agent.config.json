@@ -1,0 +1,15 @@
+{
+  "persona_path": "AGENTS.md",
+  "workspace_whitelist": [
+    "./data",
+    "./outputs",
+    "./tmp"
+  ],
+  "extra_docs": [
+    "docs_api_index/itk_api_index.md",
+    "docs_api_index/vtk_api_index.md",
+    "docs_api_index/rtk_api_index.md"
+  ],
+  "model": "gpt-5-thinking",
+  "strict_structured_output": true
+}
