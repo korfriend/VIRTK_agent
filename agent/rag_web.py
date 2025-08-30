@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import os, json, time, hashlib
+
+import hashlib
+import json
+import os
+import time
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
 from urllib.parse import urlparse
 
 CACHE_DIR = Path(__file__).resolve().parents[1]/".cache"/"web_rag"

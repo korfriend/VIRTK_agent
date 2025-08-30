@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import json
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,4 +20,3 @@ print("HAS_AGENTS_FIRST:", first == "AGENTS.md")
 
 print("GEN_MODEL:", getattr(m, 'GEN_MODEL', None))
 print("EMBED_MODEL:", getattr(m, 'EMBED_MODEL', None))
-

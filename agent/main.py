@@ -10,9 +10,15 @@
 # Optional: include index snippets
 # python agent/main.py --use-index "Create an RTK FDK reconstruction pipeline skeleton"
 #!/usr/bin/env python3
-import os, sys, json, re, math, argparse, hashlib, time
+import argparse
+import hashlib
+import json
+import os
+import re
+import sys
+import time
 from pathlib import Path
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
 
 try:
     import tiktoken  # pip install tiktoken
@@ -172,13 +178,9 @@ except Exception:
     pass
 
 # --------- UTILS: chunking / token count ----------
-def tokenize_len(text, model="gpt-4o"):  # token count approximation
-    enc = tiktoken.get_encoding("o200k_base")
-    return len(enc.encode(text))
-
-# Redefine with fallback when tiktoken is unavailable
-def tokenize_len(text, model="gpt-4o"):  # token count approximation
-    if globals().get('_HAS_TIKTOKEN'):
+def tokenize_len(text, model="gpt-4o") -> int:
+    """Approximate token count using tiktoken if available, else word count."""
+    if _HAS_TIKTOKEN:
         enc = tiktoken.get_encoding("o200k_base")
         return len(enc.encode(text))
     return max(1, len(text.split()))
@@ -189,24 +191,28 @@ def md_to_chunks(text: str, max_tokens=600, overlap_tokens=80) -> List[str]:
     chunks = []
     for p in parts:
         p = p.strip()
-        if not p: continue
+        if not p:
+            continue
         if tokenize_len(p) <= max_tokens:
             chunks.append(p)
-        else:
-            toks = re.split(r"(\s+)", p)  # word-boundary segmentation
-            buf, t = [], 0
-            for w in toks:
-                buf.append(w); t = tokenize_len("".join(buf))
-                if t > max_tokens:
-                    chunk = "".join(buf[:-1]).strip()
-                    if chunk: chunks.append(chunk)
-                    # overlap
-                    back = []
-                    while buf and tokenize_len("".join(back)) < overlap_tokens:
-                        back.insert(0, buf.pop())
-                    buf = back
-            if buf:
-                chunks.append("".join(buf).strip())
+            continue
+        toks = re.split(r"(\s+)", p)  # word-boundary segmentation
+        buf: List[str] = []
+        t = 0
+        for w in toks:
+            buf.append(w)
+            t = tokenize_len("".join(buf))
+            if t > max_tokens:
+                chunk = "".join(buf[:-1]).strip()
+                if chunk:
+                    chunks.append(chunk)
+                # overlap
+                back: List[str] = []
+                while buf and tokenize_len("".join(back)) < overlap_tokens:
+                    back.insert(0, buf.pop())
+                buf = back
+        if buf:
+            chunks.append("".join(buf).strip())
     return chunks
 
 def file_fingerprint(path: Path) -> str:
@@ -228,8 +234,10 @@ def embed_texts(client: OpenAI, texts: List[str]) -> np.ndarray:
     return np.vstack(vecs)
 
 def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
-    na = np.linalg.norm(a); nb = np.linalg.norm(b)
-    if na == 0 or nb == 0: return 0.0
+    na = np.linalg.norm(a)
+    nb = np.linalg.norm(b)
+    if na == 0 or nb == 0:
+        return 0.0
     return float(np.dot(a, b) / (na * nb))
 
 # --------- RAG INDEX (BUILD/LOAD) ----------
@@ -247,14 +255,12 @@ def build_or_load_index() -> Dict:
     cache_file = CACHE_DIR/(cache_key+".json")
 
     # Validate cache by comparing file fingerprints
-    need_rebuild = True
     if cache_file.exists():
         try:
             data = json.loads(cache_file.read_text(encoding="utf-8"))
             fps_old = [d["fp"] for d in data["docs"]]
             fps_now = [file_fingerprint(p) for p in DOC_PATHS]
             if fps_old == fps_now:
-                need_rebuild = False
                 return {
                     **data,
                     "embeds": np.array(data["embeds"], dtype=np.float32),
@@ -292,7 +298,8 @@ def build_or_load_index() -> Dict:
 
 # (optional) keyword search over docs_api_index/*.md
 def optional_index_search(query: str, topk=2) -> List[str]:
-    if not INDEX_DIR.exists(): return []
+    if not INDEX_DIR.exists():
+        return []
     # naive count-based scoring
     qws = set(re.findall(r"\w+", query.lower()))
     scored = []
@@ -353,7 +360,6 @@ def call_llm(user_query: str, retrieved_blobs: List[str]) -> str:
 # --------- CLI ----------
 def main():
     ap = argparse.ArgumentParser(description="RAG-powered ITK/VTK/RTK agent")
-    ap = argparse.ArgumentParser(description="RAG-powered ITK/VTK/RTK agent")
     ap.add_argument("query", nargs="*", help="Natural language query. If empty, runs an example.")
     ap.add_argument("--k", type=int, default=6, help="retrieval top-k")
     ap.add_argument("--use-index", action="store_true", help="also include docs_api_index/* snippets")
@@ -378,10 +384,12 @@ def main():
         if args.allow_domain:
             allow.extend(args.allow_domain)
         # de-dup while preserving order
-        seen = set(); merged = []
+        seen = set()
+        merged: List[str] = []
         for d in allow:
             if d not in seen:
-                seen.add(d); merged.append(d)
+                seen.add(d)
+                merged.append(d)
         retrieved += optional_web_search(q, provider=prov, allow_domains=merged, max_results=maxr, timeout_s=WEB_CFG.get("timeout_s", 8))
 
     answer = call_llm(q, retrieved)
