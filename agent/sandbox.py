@@ -12,9 +12,7 @@ ALLOWED_EXTS = {".mha", ".nii", ".nrrd", ".png", ".jpg", ".tif"}
 
 
 def guard_path(path: str) -> str:
-    """
-    path媛 ?덉슜???붾젆?좊━? ?뺤옣?먯씤吏 ?뺤씤.
-    """
+    """Ensure the path is within allowed directories and has an allowed extension."""
     p = pathlib.Path(path).resolve()
 
     # 1) Check whitelist directories
@@ -34,9 +32,7 @@ def guard_path(path: str) -> str:
 
 
 def guard_args(args: dict) -> dict:
-    """
-    dict ?덉쓽 媛?以??뚯씪 寃쎈줈媛 ?덉쑝硫?寃?????덉쟾??寃쎈줈留?諛섑솚.
-    """
+    """Validate any file path values in a dict and return safe absolute paths."""
     checked = {}
     for k, v in args.items():
         if isinstance(v, str) and ("/" in v or "\\" in v):  # likely a path

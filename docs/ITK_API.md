@@ -1,11 +1,10 @@
-# ITK Python – Quick Reference (80/20)
+# ITK Python Quick Reference (80/20)
 
-> 목적: **이미지 I/O, 기본 메타데이터 접근, 필터 체인, 변환** 등 자주 쓰는 API를 빠르게 참조.
-> 전제: `pip install itk`
+> Goal: Quick reference for common APIs: image I/O, basic metadata, filter chains, transforms. Prereq: `pip install itk`.
 
 ---
 
-## 0) 기본 import
+## 0) Basic import
 
 ```python
 import itk
@@ -13,43 +12,43 @@ import itk
 
 ---
 
-## 1) 이미지 읽기/쓰기
+## 1) Read/Write images
 
 ```python
-# 읽기
-img = itk.imread("input.nii.gz", pixel_type=itk.F)   # itk.UC=uint8, itk.F=float32 등
+# Read
+img = itk.imread("input.nii.gz", pixel_type=itk.F)   # itk.UC=uint8, itk.F=float32
 
-# 쓰기
+# Write
 itk.imwrite(img, "output.mha")
 ```
 
 ---
 
-## 2) 메타데이터 (size, spacing, origin, direction)
+## 2) Metadata (size, spacing, origin, direction)
 
 ```python
 sz = itk.size(img)         # (x,y,z)
 sp = itk.spacing(img)      # voxel spacing
 org = itk.origin(img)      # physical origin
-dirM = itk.direction(img)  # 3x3 방향행렬
+dirM = itk.direction(img)  # 3x3 direction matrix
 ```
 
 ---
 
-## 3) 타입 & 캐스팅
+## 3) Types & casting
 
 ```python
-# 명시적 이미지 타입 정의: (pixel, dimension)
+# Explicit image type: (pixel, dimension)
 Float3D = itk.Image[itk.F, 3]
 
-# 캐스팅
+# Casting
 Caster = itk.CastImageFilter[type(img), Float3D].New(Input=img)
 img_f = Caster.GetOutput()
 ```
 
 ---
 
-## 4) 자주 쓰는 필터
+## 4) Common filters
 
 ### Median Filter
 
@@ -68,7 +67,7 @@ seg = itk.ConnectedThresholdImageFilter[
 mask = seg.GetOutput()
 ```
 
-### Resample (해상도/spacing 변경)
+### Resample (change resolution/spacing)
 
 ```python
 res = itk.ResampleImageFilter[type(img), type(img)].New(
@@ -95,50 +94,49 @@ out_grad = grad.GetOutput()
 
 ---
 
-## 5) 레지스트레이션 (Rigid, Simple)
+## 5) Registration (Rigid, Simple)
 
 ```python
 fixed = itk.imread("fixed.nii.gz", itk.F)
 moving = itk.imread("moving.nii.gz", itk.F)
 
 reg = itk.ImageRegistrationMethodv4[itk.Image[itk.F,3], itk.Image[itk.F,3]].New()
-# Optimizer, Metric, Transform 설정 필요 (고급)
+# Configure Optimizer, Metric, Transform (advanced)
 ```
 
-*(※ 여기서는 구조만, 실제 파라미터는 상황별 설정)*
+*(Structure only; set parameters per use case)*
 
 ---
 
-## 6) 파이프라인 실행
+## 6) Run pipelines
 
 ```python
-# 방식 1: .Update() 직접 호출
+# Way 1: .Update() directly
 med.Update()
 out = med.GetOutput()
 
-# 방식 2: itk.pipeline() 헬퍼
+# Way 2: itk.pipeline() helper
 out = itk.pipeline(med)
 ```
 
 ---
 
-## 7) NumPy 변환
+## 7) NumPy conversion
 
 ```python
-import itk
 import numpy as np
 
-arr = itk.array_from_image(img)   # ITK → numpy (z,y,x 순)
+arr = itk.array_from_image(img)   # ITK → numpy (z,y,x)
 img2 = itk.image_from_array(arr)  # numpy → ITK
 ```
 
 ---
 
-## 8) Transforms (회전/이동)
+## 8) Transforms (rotation/translation)
 
 ```python
 tf = itk.Euler3DTransform[itk.D].New()
-tf.SetRotation(0.0, 0.0, 0.5)      # radian
+tf.SetRotation(0.0, 0.0, 0.5)      # radians
 tf.SetTranslation((10.0, 0.0, 0.0))
 
 resamp = itk.ResampleImageFilter[type(img), type(img)].New(
@@ -149,7 +147,7 @@ out_tf = resamp.GetOutput()
 
 ---
 
-## 9) Segmentation 예시: Otsu Threshold
+## 9) Segmentation example: Otsu Threshold
 
 ```python
 otsu = itk.OtsuThresholdImageFilter[type(img), itk.Image[itk.UC,3]].New(Input=img)
@@ -158,18 +156,18 @@ mask = otsu.GetOutput()
 
 ---
 
-## 10) 팁
+## 10) Tips
 
-* ITK는 **템플릿 기반**이라 Python에서도 `Filter[InputType, OutputType]` 형태로 지정.
-* 타입 불일치 오류가 자주 발생 → 필요하면 `CastImageFilter`로 맞추기.
-* `itk.Image[pixel, dimension]` 로 항상 픽셀 타입/차원 명시 가능.
-* 의료 이미지 다룰 때는 **spacing/origin/direction** 보존 주의.
+* ITK is template-based; in Python, many filters are `Filter[InputType, OutputType]`.
+* Type mismatch is common → use `CastImageFilter` as needed.
+* You can always annotate `itk.Image[pixel, dimension]` types.
+* Preserve spacing/origin/direction for medical images.
 
 ---
 
-## 11) 최소 예제 3종
+## 11) Minimal examples
 
-### (A) Median 필터
+### (A) Median filter
 
 ```python
 import itk
@@ -197,6 +195,7 @@ img = itk.imread("ct.nii.gz", itk.F)
 arr = itk.array_from_image(img)
 arr2 = (arr > 150).astype(np.uint8)
 mask = itk.image_from_array(arr2)
-mask.CopyInformation(img)   # spacing, origin 유지
+mask.CopyInformation(img)   # keep spacing, origin
 itk.imwrite(mask, "mask.nii.gz")
 ```
+

@@ -1,15 +1,14 @@
-﻿## ?ъ슜踰?
-# # 1) ?섏〈??
-# pip install openai tiktoken numpy
-# 
-# # 2) ??
+﻿## Usage
+# 1) Install deps
+# pip install -r requirements.txt
+#
+# 2) Set API key
 # export OPENAI_API_KEY=sk-...
-# 
-# # 3) ?ㅽ뻾 ??
-# python agent/main.py "ITK濡?nii.gz ?쎄퀬 median ?꾪꽣 ????ν븯??肄붾뱶"
-# # (?듭뀡) ? ?됱씤 ?쇰???媛숈씠 二쇱엯
-# python agent/main.py --use-index "RTK FDK ?뚯씠?꾨씪???ㅼ펷?덊넠 留뚮뱾?댁쨾"
-
+#
+# 3) Run
+# python agent/main.py "Write ITK code to read nii.gz and apply a median filter, then save"
+# Optional: include index snippets
+# python agent/main.py --use-index "Create an RTK FDK reconstruction pipeline skeleton"
 #!/usr/bin/env python3
 import os, sys, json, re, math, argparse, hashlib, time
 from pathlib import Path
@@ -37,8 +36,8 @@ DOC_PATHS = [
     ROOT/"docs/VTK_API.md",
     ROOT/"docs/RTK_API.md",
 ]
-INDEX_DIR = ROOT/"docs_api_index"            # (?좏깮) ? ?됱씤
-CACHE_DIR = ROOT/"agent/.rag_cache"          # ?꾨쿋??罹먯떆
+INDEX_DIR = ROOT/"docs_api_index"            # full-text index (optional)
+CACHE_DIR = ROOT/"agent/.rag_cache"          # embedding cache
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Optional web RAG (config-overridable)
@@ -161,7 +160,7 @@ except Exception:
 EMBED_MODEL = "text-embedding-3-large"       # 怨좎꽦???꾨쿋??(?ㅺ뎅?닳넁)  :contentReference[oaicite:1]{index=1}
 GEN_MODEL   = "gpt-5.1"                      # ?덉떆: 理쒖떊 梨?由ъ쫵 紐⑤뜽(?먰븯??紐⑤뜽濡?援먯껜)  :contentReference[oaicite:2]{index=2}
 
-# Responses API 沅뚯옣(?듯빀??. Chat Completions???⑤룄 ??  :contentReference[oaicite:3]{index=3}
+// Responses API 沅뚯옣(?듯빀??. Chat Completions???⑤룄 ??  :contentReference[oaicite:3]{index=3}
 
 # Override models from config if present
 try:
@@ -223,7 +222,7 @@ def get_client() -> OpenAI:
     return OpenAI()
 
 def embed_texts(client: OpenAI, texts: List[str]) -> np.ndarray:
-    # 諛곗튂 ?꾨쿋??
+    # Batch embedding
     resp = client.embeddings.create(model=EMBED_MODEL, input=texts)  # :contentReference[oaicite:4]{index=4}
     vecs = [np.array(d.embedding, dtype=np.float32) for d in resp.data]
     return np.vstack(vecs)
@@ -291,10 +290,10 @@ def build_or_load_index() -> Dict:
     payload["embeds"] = embeds
     return payload
 
-# (?좏깮) ? ?됱씤??媛숈? 諛⑹떇?쇰줈 蹂닿컯 寃??
+# full-text index (optional)??媛숈? 諛⑹떇?쇰줈 蹂닿컯 寃??
 def optional_index_search(query: str, topk=2) -> List[str]:
     if not INDEX_DIR.exists(): return []
-    # 留ㅼ슦 ?⑥닚???ㅼ썙???먯닔
+    # naive count-based scoring
     qws = set(re.findall(r"\w+", query.lower()))
     scored = []
     for p in INDEX_DIR.glob("*.md"):
@@ -317,7 +316,7 @@ def retrieve_chunks(index: Dict, query: str, topk=6) -> List[Tuple[str, Dict, fl
     client = get_client()
     qv = embed_texts(client, [query])[0]
     sims = [cosine_sim(qv, v) for v in index["embeds"]]
-    # ?곸쐞 topk
+    # top-k
     top_ix = np.argsort(sims)[::-1][:topk]
     hits = []
     for j in top_ix:
@@ -338,7 +337,7 @@ def call_llm(user_query: str, retrieved_blobs: List[str]) -> str:
         f"### Context {i+1}\n{blob}" for i, blob in enumerate(retrieved_blobs)
     )
 
-    # Responses API ?덉떆 (Chat Completions瑜??곕젮硫?/chat ?붾뱶?ъ씤???ъ슜)  :contentReference[oaicite:5]{index=5}
+    // Responses API ?덉떆 (Chat Completions瑜??곕젮硫?/chat ?붾뱶?ъ씤???ъ슜)  :contentReference[oaicite:5]{index=5}
     resp = client.responses.create(
         model=GEN_MODEL,
         input=[
@@ -348,7 +347,7 @@ def call_llm(user_query: str, retrieved_blobs: List[str]) -> str:
         ],
         temperature=0.2,
     )
-    # 蹂몃Ц ?띿뒪??異붿텧
+    # Extract text output
     return resp.output_text
 
 # --------- CLI ----------
@@ -391,11 +390,14 @@ def main():
 if __name__ == "__main__":
     # Load secrets from local config if available
     _load_secrets_env()
-    # OPENAI_API_KEY ?섍꼍蹂???꾩슂
+    # # Requires OPENAI_API_KEY蹂???꾩슂
     if not os.getenv("OPENAI_API_KEY"):
         print("ERROR: Set OPENAI_API_KEY first.", file=sys.stderr)
         sys.exit(1)
     main()
+
+
+
 
 
 
