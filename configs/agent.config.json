@@ -15,7 +15,7 @@
   "strict_structured_output": true,
   "web_search": {
     "enabled": false,
-    "provider": "bing",
+    "provider": "google",
     "allow_domains": [
       "itk.org",
       "vtk.org",

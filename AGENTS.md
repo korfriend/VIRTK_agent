@@ -16,7 +16,7 @@ Agent workflow and style guide: see `docs/AgentStyle.md` (Korean).
 - Install deps: `pip install -r requirements.txt` (add if missing).
 - Run the agent: `python agent/main.py "<task prompt>"`
 - Use index (optional): `python agent/main.py --use-index "<task>"`
-- Domain-restricted web RAG: `python agent/main.py --use-index --web --allow-domain itk.org --allow-domain vtk.org "<task>"`
+- Domain-restricted web RAG: `python agent/main.py --use-index --web --allow-domain itk.org --allow-domain vtk.org "<task>"` (default provider: Google; set `GOOGLE_API_KEY`, `GOOGLE_CSE_ID`). Use `--web-provider bing` with `BING_API_KEY` if preferred.
 - Build API index: `python scripts/gen_api_index.py`
 - Run tests: `pytest -q` (if `tests/` exists).
 

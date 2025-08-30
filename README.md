@@ -23,10 +23,13 @@ A domain-specific Python coding agent focused on ITK/VTK/RTK pipelines. It provi
 ### Web RAG (optional, domain-restricted)
 
 - Enable with CLI: `--web` (mixes local docs + web)
-- Provider: Bing Search (set `BING_API_KEY` env var)
-- Domain allowlist: configure in `configs/agent.config.json > web_search.allow_domains`, or add via `--allow-domain` flags.
+- Default provider: Google Programmable Search
+  - Set `GOOGLE_API_KEY` and `GOOGLE_CSE_ID` (Programmable Search Engine ID)
+- Bing is also supported: set `BING_API_KEY` and use `--web-provider bing`
+- Domain allowlist: configure in `configs/agent.config.json > web_search.allow_domains`, or add via `--allow-domain` flags
 - Example:
-  - `python agent/main.py --use-index --web --max-web-results 3 --allow-domain itk.org --allow-domain vtk.org "<task>"`
+  - Google (default): `python agent/main.py --use-index --web --max-web-results 3 --allow-domain itk.org --allow-domain vtk.org "<task>"`
+  - Bing: `python agent/main.py --use-index --web --web-provider bing --allow-domain itk.org "<task>"`
 
 ## Project Structure
 

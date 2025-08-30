@@ -44,7 +44,7 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 # Optional web RAG (config-overridable)
 WEB_CFG = {
     "enabled": False,
-    "provider": "bing",
+    "provider": "google",
     "allow_domains": [],
     "max_results": 5,
     "timeout_s": 8,
@@ -339,7 +339,7 @@ def main():
     ap.add_argument("--k", type=int, default=6, help="retrieval top-k")
     ap.add_argument("--use-index", action="store_true", help="docs_api_index/* 일부도 함께 주입")
     ap.add_argument("--web", action="store_true", help="도메인 허용목록 기반 웹 RAG 활성화")
-    ap.add_argument("--web-provider", default=None, help="웹 검색 제공자(bing)")
+    ap.add_argument("--web-provider", default=None, help="웹 검색 제공자(google|bing)")
     ap.add_argument("--max-web-results", type=int, default=None, help="웹 검색 결과 상한")
     ap.add_argument("--allow-domain", action="append", default=None, help="허용 도메인 추가(중복 호출 가능)")
     args = ap.parse_args()
