@@ -16,6 +16,7 @@ Agent workflow and style guide: see `docs/AgentStyle.md` (Korean).
 - Install deps: `pip install -r requirements.txt` (add if missing).
 - Run the agent: `python agent/main.py "<task prompt>"`
 - Use index (optional): `python agent/main.py --use-index "<task>"`
+- Domain-restricted web RAG: `python agent/main.py --use-index --web --allow-domain itk.org --allow-domain vtk.org "<task>"`
 - Build API index: `python scripts/gen_api_index.py`
 - Run tests: `pytest -q` (if `tests/` exists).
 
@@ -41,4 +42,3 @@ Agent workflow and style guide: see `docs/AgentStyle.md` (Korean).
 - Prefer runnable, minimal examples; avoid speculative APIs.
 - When uncertain, use safe defaults and leave clear TODOs.
 - Keep `docs/` and `docs_api_index/` consistent with code changes.
-

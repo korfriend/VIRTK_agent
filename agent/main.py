@@ -41,6 +41,15 @@ INDEX_DIR = ROOT/"docs_api_index"            # (선택) 풀 색인
 CACHE_DIR = ROOT/"agent/.rag_cache"          # 임베딩 캐시
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
+# Optional web RAG (config-overridable)
+WEB_CFG = {
+    "enabled": False,
+    "provider": "bing",
+    "allow_domains": [],
+    "max_results": 5,
+    "timeout_s": 8,
+}
+
 # --- Config-driven doc selection (AGENTS.md, persona_path, extra_docs) ---
 # Preserve backward compatibility: compute DOC_PATHS dynamically.
 DEFAULT_DOCS = [
@@ -114,6 +123,21 @@ try:
 except Exception:
     # Fallback to existing DOC_PATHS if computation fails
     DOC_PATHS = DOC_PATHS
+
+# Load web config if present
+try:
+    _cfg = _load_config()
+    if isinstance(_cfg, dict) and isinstance(_cfg.get("web_search"), dict):
+        wc = _cfg["web_search"]
+        WEB_CFG.update({
+            "enabled": bool(wc.get("enabled", WEB_CFG["enabled"])),
+            "provider": wc.get("provider", WEB_CFG["provider"]),
+            "allow_domains": wc.get("allow_domains", WEB_CFG["allow_domains"]),
+            "max_results": int(wc.get("max_results", WEB_CFG["max_results"])),
+            "timeout_s": int(wc.get("timeout_s", WEB_CFG["timeout_s"]))
+        })
+except Exception:
+    pass
 
 EMBED_MODEL = "text-embedding-3-large"       # 고성능 임베딩 (다국어↑)  :contentReference[oaicite:1]{index=1}
 GEN_MODEL   = "gpt-5.1"                      # 예시: 최신 챗/리즌 모델(원하는 모델로 교체)  :contentReference[oaicite:2]{index=2}
@@ -262,6 +286,13 @@ def optional_index_search(query: str, topk=2) -> List[str]:
     scored.sort(reverse=True, key=lambda x: x[0])
     return [scored[i][2][:8000] for i in range(min(topk, len(scored)))]
 
+def optional_web_search(query: str, provider: str, allow_domains: List[str], max_results: int, timeout_s: int) -> List[str]:
+    try:
+        from .rag_web import web_retrieve
+    except Exception:
+        return []
+    return web_retrieve(query, provider=provider, allow_domains=allow_domains, max_results=max_results, timeout_s=timeout_s)
+
 # --------- RETRIEVE ----------
 def retrieve_chunks(index: Dict, query: str, topk=6) -> List[Tuple[str, Dict, float]]:
     client = get_client()
@@ -307,6 +338,10 @@ def main():
     ap.add_argument("query", nargs="*", help="질의(자연어). 비면 예시 실행")
     ap.add_argument("--k", type=int, default=6, help="retrieval top-k")
     ap.add_argument("--use-index", action="store_true", help="docs_api_index/* 일부도 함께 주입")
+    ap.add_argument("--web", action="store_true", help="도메인 허용목록 기반 웹 RAG 활성화")
+    ap.add_argument("--web-provider", default=None, help="웹 검색 제공자(bing)")
+    ap.add_argument("--max-web-results", type=int, default=None, help="웹 검색 결과 상한")
+    ap.add_argument("--allow-domain", action="append", default=None, help="허용 도메인 추가(중복 호출 가능)")
     args = ap.parse_args()
 
     q = " ".join(args.query) or "VTK로 STL 읽고 노멀 재계산 후 저장하는 코드를 만들어줘."
@@ -316,6 +351,19 @@ def main():
     retrieved = [h[0] for h in hits]
     if args.use_index:
         retrieved += optional_index_search(q, topk=2)
+    # optional web
+    if args.web or WEB_CFG.get("enabled"):
+        prov = args.web_provider or WEB_CFG.get("provider", "bing")
+        maxr = args.max_web_results or WEB_CFG.get("max_results", 5)
+        allow = list(WEB_CFG.get("allow_domains") or [])
+        if args.allow_domain:
+            allow.extend(args.allow_domain)
+        # de-dup while preserving order
+        seen = set(); merged = []
+        for d in allow:
+            if d not in seen:
+                seen.add(d); merged.append(d)
+        retrieved += optional_web_search(q, provider=prov, allow_domains=merged, max_results=maxr, timeout_s=WEB_CFG.get("timeout_s", 8))
 
     answer = call_llm(q, retrieved)
     print(answer)

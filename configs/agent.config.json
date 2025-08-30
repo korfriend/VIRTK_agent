@@ -11,5 +11,20 @@
     "docs_api_index/rtk_api_index.md"
   ],
   "model": "gpt-5-thinking",
-  "strict_structured_output": true
+  "embed_model": "text-embedding-3-large",
+  "strict_structured_output": true,
+  "web_search": {
+    "enabled": false,
+    "provider": "bing",
+    "allow_domains": [
+      "itk.org",
+      "vtk.org",
+      "insightsoftwareconsortium.github.io",
+      "rtk.org",
+      "github.com",
+      "readthedocs.io"
+    ],
+    "max_results": 5,
+    "timeout_s": 8
+  }
 }
