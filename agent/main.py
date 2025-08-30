@@ -59,6 +59,25 @@ DEFAULT_DOCS = [
     Path("docs/RTK_API.md"),
 ]
 
+def _load_secrets_env() -> None:
+    """Load API keys from configs/secrets.local.json if present.
+    Environment variables take precedence over file values.
+    Supported keys: OPENAI_API_KEY, GOOGLE_API_KEY, GOOGLE_CSE_ID, BING_API_KEY
+    """
+    try:
+        candidates = [ROOT/"configs/secrets.local.json", ROOT/"configs/secrets.json"]
+        for p in candidates:
+            if p.exists():
+                data = json.loads(p.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    for k in ("OPENAI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_CSE_ID", "BING_API_KEY"):
+                        if not os.getenv(k) and data.get(k):
+                            os.environ[k] = str(data.get(k))
+                break
+    except Exception:
+        # Fail silently; env vars can still be set by user
+        pass
+
 def _load_config() -> dict:
     cfg_path = ROOT/"configs/agent.config.json"
     if cfg_path.exists():
@@ -369,6 +388,8 @@ def main():
     print(answer)
 
 if __name__ == "__main__":
+    # Load secrets from local config if available
+    _load_secrets_env()
     # OPENAI_API_KEY 환경변수 필요
     if not os.getenv("OPENAI_API_KEY"):
         print("ERROR: Set OPENAI_API_KEY first.", file=sys.stderr)

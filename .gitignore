@@ -32,3 +32,7 @@ Thumbs.db
 
 # Node (if any examples/scripts use it)
 node_modules/
+
+# Local secrets (do not commit API keys)
+configs/secrets.local.json
+configs/secrets.json

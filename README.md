@@ -45,7 +45,30 @@ A domain-specific Python coding agent focused on ITK/VTK/RTK pipelines. It provi
 
 - Python 3.10+
 - UTF-8 encoding for all text files (use `scripts/convert_to_utf8.ps1` on Windows if needed)
- - For web RAG: `requests`, `beautifulsoup4`, and a search API key (e.g., `BING_API_KEY`)
+- For web RAG: `requests`, `beautifulsoup4`, and a search API key (e.g., `BING_API_KEY`)
+
+## Secrets (API Keys)
+
+Preferred: create `configs/secrets.local.json` (not committed) with keys. Environment variables override file values.
+
+1) Create from template:
+
+```
+cp configs/secrets.local.example.json configs/secrets.local.json
+```
+
+2) Fill your keys:
+
+```
+{
+  "OPENAI_API_KEY": "sk-...",
+  "GOOGLE_API_KEY": "AIza...",
+  "GOOGLE_CSE_ID": "your_cse_id",
+  "BING_API_KEY": "...optional..."
+}
+```
+
+Alternatively, set environment variables directly (`OPENAI_API_KEY`, `GOOGLE_API_KEY`, `GOOGLE_CSE_ID`, `BING_API_KEY`).
 
 ## Contributing
 
